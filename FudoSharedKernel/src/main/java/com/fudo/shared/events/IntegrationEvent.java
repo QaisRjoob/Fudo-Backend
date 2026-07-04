@@ -1,0 +1,13 @@
+package com.fudo.shared.events;
+
+import java.time.Instant;
+import java.util.UUID;
+
+public interface IntegrationEvent {
+
+    UUID getEventId();
+
+    Instant getOccurredAt();
+
+    String getEventType();
+}

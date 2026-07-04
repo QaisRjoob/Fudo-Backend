@@ -1,0 +1,23 @@
+# Maven build output (every service)
+**/target/
+
+# Portable Maven/JDK toolchain bundled for local dev - not project source
+tools/
+
+# The frontend/mobile app lives in its own repo (Fudo-Frontend), not this one
+Fudo-App-main/
+
+# IDE
+.idea/
+*.iml
+.vscode/
+.classpath
+.project
+.settings/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log

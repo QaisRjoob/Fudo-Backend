@@ -1,0 +1,174 @@
+name: fudo-backend
+
+x-jwt-env: &jwt-env
+  JWT_SECRET_KEY: FudoSuperSecretKeyThatIsAtLeast32CharactersLong!
+  JWT_ISSUER: FudoIdentityAPI
+  JWT_AUDIENCE: FudoClients
+
+x-db-env: &db-env
+  DB_URL: jdbc:sqlserver://sqlserver:1433;databaseName=FudoDB;trustServerCertificate=true
+  DB_USERNAME: sa
+  DB_PASSWORD: YourStrong!Passw0rd
+
+services:
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    environment:
+      ACCEPT_EULA: "Y"
+      MSSQL_SA_PASSWORD: YourStrong!Passw0rd
+    ports:
+      - "1433:1433"
+    volumes:
+      - sqlserver-data:/var/opt/mssql
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/mssql-tools18/bin/sqlcmd -C -S localhost -U sa -P \"$$MSSQL_SA_PASSWORD\" -Q 'SELECT 1' || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  # All 8 services share one SQL Server instance/database (FudoDB), mirroring the
+  # original .NET design - this one-shot job creates that database before anything
+  # else starts, since EF Core/Hibernate's auto-migration creates tables but not
+  # the database itself.
+  db-init:
+    image: mcr.microsoft.com/mssql-tools18
+    depends_on:
+      sqlserver:
+        condition: service_healthy
+    entrypoint: >
+      /bin/bash -c "
+      /opt/mssql-tools18/bin/sqlcmd -C -S sqlserver -U sa -P 'YourStrong!Passw0rd'
+      -Q \"IF DB_ID('FudoDB') IS NULL CREATE DATABASE FudoDB;\"
+      "
+
+  identity-api:
+    build:
+      context: .
+      dockerfile: IdentityAPI/Dockerfile
+    ports:
+      - "5001:5001"
+    environment:
+      <<: [*jwt-env, *db-env]
+    depends_on:
+      db-init:
+        condition: service_completed_successfully
+
+  user-api:
+    build:
+      context: .
+      dockerfile: UserAPI/Dockerfile
+    ports:
+      - "5002:5002"
+    environment:
+      <<: [*jwt-env, *db-env]
+    depends_on:
+      db-init:
+        condition: service_completed_successfully
+
+  post-api:
+    build:
+      context: .
+      dockerfile: PostAPI/Dockerfile
+    ports:
+      - "5003:5003"
+    environment:
+      <<: [*jwt-env, *db-env]
+    depends_on:
+      db-init:
+        condition: service_completed_successfully
+
+  feed-api:
+    build:
+      context: .
+      dockerfile: FeedAPI/Dockerfile
+    ports:
+      - "5004:5004"
+    environment:
+      <<: [*jwt-env, *db-env]
+    depends_on:
+      db-init:
+        condition: service_completed_successfully
+      # FeedAPI's ddl-auto=validate requires the posts/follows/post_tags/post_media
+      # tables to already exist, so it must come up after the services that own them.
+      post-api:
+        condition: service_started
+      user-api:
+        condition: service_started
+
+  story-api:
+    build:
+      context: .
+      dockerfile: StoryAPI/Dockerfile
+    ports:
+      - "5005:5005"
+    environment:
+      <<: [*jwt-env, *db-env]
+    depends_on:
+      db-init:
+        condition: service_completed_successfully
+
+  interaction-api:
+    build:
+      context: .
+      dockerfile: InteractionAPI/Dockerfile
+    ports:
+      - "5006:5006"
+    environment:
+      <<: [*jwt-env, *db-env]
+    depends_on:
+      db-init:
+        condition: service_completed_successfully
+
+  messaging-api:
+    build:
+      context: .
+      dockerfile: MessagingAPI/Dockerfile
+    ports:
+      - "5007:5007"
+    environment:
+      <<: [*jwt-env, *db-env]
+    depends_on:
+      db-init:
+        condition: service_completed_successfully
+
+  notification-api:
+    build:
+      context: .
+      dockerfile: NotificationAPI/Dockerfile
+    ports:
+      - "5008:5008"
+    environment:
+      <<: [*jwt-env, *db-env]
+    depends_on:
+      db-init:
+        condition: service_completed_successfully
+
+  fudo-api-gateway:
+    build:
+      context: .
+      dockerfile: FudoApiGateway/Dockerfile
+    ports:
+      - "5000:5000"
+    environment:
+      <<: *jwt-env
+      IDENTITY_API_URI: http://identity-api:5001
+      USER_API_URI: http://user-api:5002
+      POST_API_URI: http://post-api:5003
+      FEED_API_URI: http://feed-api:5004
+      STORY_API_URI: http://story-api:5005
+      INTERACTION_API_URI: http://interaction-api:5006
+      MESSAGING_API_URI: http://messaging-api:5007
+      NOTIFICATION_API_URI: http://notification-api:5008
+    depends_on:
+      - identity-api
+      - user-api
+      - post-api
+      - feed-api
+      - story-api
+      - interaction-api
+      - messaging-api
+      - notification-api
+
+volumes:
+  sqlserver-data:

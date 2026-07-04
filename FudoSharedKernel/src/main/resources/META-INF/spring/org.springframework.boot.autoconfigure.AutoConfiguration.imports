@@ -1,0 +1,2 @@
+com.fudo.shared.messaging.RabbitMessagingAutoConfiguration
+com.fudo.shared.security.FudoSecurityAutoConfiguration

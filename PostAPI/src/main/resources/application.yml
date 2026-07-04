@@ -1,0 +1,35 @@
+server:
+  port: ${SERVER_PORT:5003}
+
+spring:
+  application:
+    name: post-api
+  datasource:
+    url: ${DB_URL:jdbc:sqlserver://localhost:1433;databaseName=FudoDB;trustServerCertificate=true}
+    username: ${DB_USERNAME:sa}
+    password: ${DB_PASSWORD:YourStrong!Passw0rd}
+    driver-class-name: com.microsoft.sqlserver.jdbc.SQLServerDriver
+  jpa:
+    hibernate:
+      ddl-auto: update
+    open-in-view: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.SQLServerDialect
+        format_sql: true
+
+jwt:
+  secret-key: ${JWT_SECRET_KEY:FudoSuperSecretKeyThatIsAtLeast32CharactersLong!}
+  issuer: ${JWT_ISSUER:FudoIdentityAPI}
+  audience: ${JWT_AUDIENCE:FudoClients}
+  access-token-expiry-minutes: ${JWT_ACCESS_EXPIRY_MINUTES:15}
+  refresh-token-expiry-days: ${JWT_REFRESH_EXPIRY_DAYS:30}
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+
+logging:
+  level:
+    root: INFO
+    org.springframework.security: INFO

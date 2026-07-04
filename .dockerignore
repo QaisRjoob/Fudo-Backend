@@ -1,0 +1,10 @@
+# Applies to every service build here (all Dockerfiles use context: .)
+**/target
+**/node_modules
+**/.expo
+**/dist
+**/web-build
+**/.git
+**/.vscode
+**/.idea
+tools
