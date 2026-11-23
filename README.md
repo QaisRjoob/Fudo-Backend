@@ -1,10 +1,45 @@
-# Fudo Backend
+<div align="center">
 
-> 📱 **Frontend / mobile app:** [Fudo-Frontend](https://github.com/QaisRjoob/Fudo-Frontend) — the Expo/React Native client that talks to this backend.
+# Fudo: Backend Microservices
 
-Java 17 / Spring Boot 3.3.4 microservices backend for **Fudo**, a social recipe-sharing app (think Instagram, but for food). Eight independently deployable services sit behind an API gateway, each owning its own slice of the domain, all backed by a single shared SQL Server database.
+**A Java 17 / Spring Boot 3 microservices backend for a recipe-sharing social network**
 
-This is a faithful port of an original .NET 9 microservices solution — same routes, same business rules, same entity model — reimplemented in Java/Spring rather than a redesign.
+Eight independently deployable services sit behind a Spring Cloud Gateway, each owning its own slice of
+the domain (identity, users, posts, feed, stories, interactions, messaging, notifications), on a shared
+SQL Server database. It is a faithful port of an original .NET 9 microservices solution: same routes,
+same business rules, same entity model, reimplemented in Java and Spring.
+
+![Java](https://img.shields.io/badge/Java-17-ED8B00?logo=openjdk&logoColor=white)
+![Spring Boot](https://img.shields.io/badge/Spring_Boot-3.3.4-6DB33F?logo=springboot&logoColor=white)
+![Spring Cloud Gateway](https://img.shields.io/badge/Spring_Cloud-Gateway-6DB33F?logo=spring&logoColor=white)
+![SQL Server](https://img.shields.io/badge/SQL_Server-2022-CC2927?logo=microsoftsqlserver&logoColor=white)
+![JWT](https://img.shields.io/badge/Auth-JWT-000000?logo=jsonwebtokens&logoColor=white)
+![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?logo=docker&logoColor=white)
+![JUnit 5](https://img.shields.io/badge/Tests-JUnit_5_+_Mockito-25A162?logo=junit5&logoColor=white)
+
+[Mobile app repo](https://github.com/QaisRjoob/Fudo-Frontend) ·
+[Architecture](#architecture) ·
+[Services](#services) ·
+[Request flow](#request-flow) ·
+[Database](#database) ·
+[Getting started](#getting-started)
+
+</div>
+
+---
+
+## Table of contents
+
+1. [Architecture](#architecture)
+2. [Services](#services)
+3. [Request flow](#request-flow)
+4. [Tech stack](#tech-stack)
+5. [Database](#database)
+6. [Getting started](#getting-started)
+7. [Notable deviations from the .NET original](#notable-deviations-from-the-net-original)
+8. [Layout](#layout)
+
+---
 
 ## Architecture
 
@@ -48,6 +83,37 @@ Every service depends on **FudoSharedKernel**, a plain Maven library (not a Spri
 | **NotificationAPI** | 5008 | User notifications |
 
 Individual services are also exposed on their original ports for direct access/debugging, but the gateway (`:5000`) is the intended single entry point.
+
+## Request flow
+
+Signing in, then reading the feed through the gateway:
+
+```mermaid
+sequenceDiagram
+    participant App as Mobile app
+    participant GW as API gateway :5000
+    participant ID as IdentityAPI
+    participant FD as FeedAPI
+    participant DB as SQL Server (FudoDB)
+
+    App->>GW: POST /api/auth/login
+    Note over GW: /api/auth/** is public
+    GW->>ID: forward
+    ID->>DB: find user, check password hash
+    ID-->>App: access token (JWT) + refresh token
+
+    App->>GW: GET /api/feed (Authorization: Bearer JWT)
+    GW->>GW: Rate limit (100 req/min) and JWT check
+    GW->>FD: forward
+    FD->>FD: Shared-kernel JWT filter sets the user
+    FD->>DB: Read posts of followed users (read-only entities)
+    FD-->>App: Paged feed
+```
+
+The gateway routes by path prefix: `/api/auth/**` to IdentityAPI, `/api/users/**` to UserAPI,
+`/api/posts/**` to PostAPI, `/api/feed/**` to FeedAPI, `/api/stories/**` to StoryAPI,
+`/api/interactions/**` to InteractionAPI, `/api/messaging/**` and `/hubs/**` to MessagingAPI, and
+`/api/notifications/**` to NotificationAPI.
 
 ## Tech stack
 
