@@ -26,6 +26,16 @@ same business rules, same entity model, reimplemented in Java and Spring.
 
 </div>
 
+<p align="center">
+  <img src="https://raw.githubusercontent.com/QaisRjoob/Fudo-Frontend/main/docs/screenshots/feed.jpg" alt="Home feed" width="19%">
+  <img src="https://raw.githubusercontent.com/QaisRjoob/Fudo-Frontend/main/docs/screenshots/explore.jpg" alt="Explore" width="19%">
+  <img src="https://raw.githubusercontent.com/QaisRjoob/Fudo-Frontend/main/docs/screenshots/recipe.jpg" alt="Recipe details" width="19%">
+  <img src="https://raw.githubusercontent.com/QaisRjoob/Fudo-Frontend/main/docs/screenshots/create.jpg" alt="New recipe" width="19%">
+  <img src="https://raw.githubusercontent.com/QaisRjoob/Fudo-Frontend/main/docs/screenshots/login.jpg" alt="Sign in" width="19%">
+  <br><sub>The <a href="https://github.com/QaisRjoob/Fudo-Frontend">Fudo mobile app</a> that this backend serves</sub>
+</p>
+
+
 ---
 
 ## Table of contents
